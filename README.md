@@ -118,6 +118,28 @@ docker run -d -p 5000:5000 \
 
 Die SQLite-Datenbank wird im `data/`-Verzeichnis gespeichert und bleibt bei Container-Neustarts erhalten.
 
+### HTTPS-Konfiguration
+
+Für HTTPS-Support platziere die Zertifikate im `data/`-Verzeichnis:
+
+```bash
+data/
+├── server.crt    # SSL-Zertifikat
+└── server.key    # Privater Schlüssel
+```
+
+Die Anwendung erkennt automatisch die Zertifikate und aktiviert HTTPS. Der Container lauscht dann auf Port 443:
+
+```bash
+# Container mit HTTPS starten
+docker compose up -d
+
+# Zugriff über HTTPS
+https://localhost
+```
+
+Ohne Zertifikate läuft die Anwendung im HTTP-Modus.
+
 ## Debug-Login
 
 Im Entwicklungsmodus (`DEBUG_MODE=True`) kann der Testbenutzer verwendet werden:

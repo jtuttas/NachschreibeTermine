@@ -20,7 +20,7 @@ COPY . .
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Port freigeben
+# Port freigeben (5000 für HTTP/HTTPS)
 EXPOSE 5000
 
 # Umgebungsvariablen
@@ -30,9 +30,12 @@ ENV PYTHONUNBUFFERED=1
 # Gunicorn als Production-Server
 RUN pip install --no-cache-dir gunicorn
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" || exit 1
+# Gunicorn Konfiguration kopieren
+COPY gunicorn.conf.py .
 
-# Anwendung starten
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "app:app"]
+# Healthcheck (ohne SSL-Validierung für selbstsignierte Zertifikate)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; import ssl; ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE; urllib.request.urlopen('https://localhost:5000/', context=ctx)" || exit 1
+
+# Anwendung starten mit Konfigurationsdatei
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "app:app"]
