@@ -219,9 +219,9 @@ def buchen(termin_id):
     termin = Termin.query.get_or_404(termin_id)
     max_plaetze = current_app.config['MAX_SCHUELER_PRO_TERMIN']
     
-    # Prüfen ob Termin in der Vergangenheit
-    if termin.ist_vergangen:
-        flash('Dieser Termin liegt in der Vergangenheit.', 'warning')
+    # Prüfen ob Termin noch buchbar ist (nicht heute und nicht vergangen)
+    if not termin.ist_buchbar:
+        flash('Für diesen Termin können keine Buchungen mehr vorgenommen werden.', 'warning')
         return redirect(url_for('main.dashboard'))
     
     # Prüfen ob noch Plätze frei sind
@@ -442,14 +442,22 @@ def teilnehmerliste_pdf(termin_id):
 # --- Hilfsfunktionen ---
 
 def load_termine_from_csv(app):
-    """Lädt Termine aus einer CSV-Datei"""
+    """Lädt Termine aus einer CSV-Datei und synchronisiert mit der Datenbank.
+    
+    - Neue Termine aus der CSV werden hinzugefügt
+    - Termine ohne Buchungen, die nicht mehr in der CSV sind, werden entfernt
+    - Termine mit Buchungen bleiben erhalten (auch wenn nicht in CSV)
+    """
     csv_path = app.config['TERMINE_CSV_PATH']
     
     if not os.path.exists(csv_path):
         app.logger.warning(f'CSV-Datei nicht gefunden: {csv_path}')
         return 0
     
-    count = 0
+    # Sammle alle Termine aus der CSV
+    csv_termine = set()
+    new_termine = []
+    
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         
@@ -457,6 +465,7 @@ def load_termine_from_csv(app):
             try:
                 datum = datetime.strptime(row['datum'], '%Y-%m-%d').date()
                 uhrzeit = datetime.strptime(row['uhrzeit'], '%H:%M').time()
+                csv_termine.add((datum, uhrzeit))
                 
                 # Prüfen ob Termin bereits existiert
                 existing = Termin.query.filter_by(
@@ -472,11 +481,31 @@ def load_termine_from_csv(app):
                         raum=row.get('raum')
                     )
                     db.session.add(termin)
-                    count += 1
+                    new_termine.append(termin)
                     
             except Exception as e:
                 app.logger.error(f'Fehler beim Laden des Termins: {str(e)}')
     
+    # Entferne Termine die nicht mehr in der CSV sind (nur ohne Buchungen)
+    removed_count = 0
+    if csv_termine:  # Nur synchronisieren wenn CSV Termine enthält
+        all_termine = Termin.query.all()
+        for termin in all_termine:
+            termin_key = (termin.datum, termin.uhrzeit)
+            if termin_key not in csv_termine:
+                if termin.buchungen.count() == 0:
+                    db.session.delete(termin)
+                    removed_count += 1
+                else:
+                    app.logger.info(f'Termin {termin.datum} {termin.uhrzeit} nicht in CSV, aber hat Buchungen - wird beibehalten')
+    else:
+        # CSV ist leer - entferne alle Termine ohne Buchungen
+        all_termine = Termin.query.all()
+        for termin in all_termine:
+            if termin.buchungen.count() == 0:
+                db.session.delete(termin)
+                removed_count += 1
+    
     db.session.commit()
-    app.logger.info(f'{count} Termine aus CSV geladen.')
-    return count
+    app.logger.info(f'{len(new_termine)} Termine aus CSV geladen, {removed_count} veraltete Termine entfernt.')
+    return len(new_termine)

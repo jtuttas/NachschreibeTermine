@@ -62,6 +62,13 @@ class Termin(db.Model):
         return self.datetime < datetime.now()
     
     @property
+    def ist_buchbar(self):
+        """Prüft ob der Termin buchbar ist (nicht heute und nicht vergangen)"""
+        from datetime import date
+        # Am Tag selbst können keine Termine mehr eingetragen werden
+        return self.datum > date.today()
+    
+    @property
     def anzahl_buchungen(self):
         """Gibt die Anzahl der Buchungen für diesen Termin zurück"""
         return self.buchungen.count()

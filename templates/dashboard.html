@@ -140,7 +140,7 @@
                 <div class="row">
                     {% for termin in data.termine %}
                     <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100 {% if termin.ist_vergangen %}border-secondary{% elif termin.anzahl_buchungen >= max_plaetze %}border-danger{% else %}border-success{% endif %}">
+                        <div class="card h-100 {% if not termin.ist_buchbar %}border-secondary{% elif termin.anzahl_buchungen >= max_plaetze %}border-danger{% else %}border-success{% endif %}">
                             <div class="card-body">
                                 <h5 class="card-title">
                                     <i class="bi bi-clock"></i> {{ termin.uhrzeit.strftime('%H:%M') }} Uhr
@@ -165,8 +165,8 @@
                                 </div>
                             </div>
                             <div class="card-footer">
-                                {% if termin.ist_vergangen %}
-                                    <span class="text-muted">Termin vergangen</span>
+                                {% if not termin.ist_buchbar %}
+                                    <span class="text-muted">{% if termin.ist_vergangen %}Termin vergangen{% else %}Buchung nicht mehr möglich{% endif %}</span>
                                 {% elif termin.anzahl_buchungen >= max_plaetze %}
                                     <span class="text-danger">Ausgebucht</span>
                                 {% else %}
