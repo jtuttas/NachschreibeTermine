@@ -106,6 +106,8 @@ class Buchung(db.Model):
 
 def init_db(app):
     """Initialisiert die Datenbank und erstellt Testbenutzer"""
+    from sqlalchemy.exc import IntegrityError
+    
     db.init_app(app)
     
     with app.app_context():
@@ -114,13 +116,17 @@ def init_db(app):
         # Testbenutzer erstellen falls nicht vorhanden
         test_user = User.query.filter_by(email='user@test.local').first()
         if not test_user:
-            test_user = User(
-                email='user@test.local',
-                name='Test Benutzer',
-                is_test_user=True,
-                is_lehrer=False  # Debug-Benutzer ist kein Lehrer
-            )
-            test_user.set_password('user')
-            db.session.add(test_user)
-            db.session.commit()
-            print("Testbenutzer 'user' wurde erstellt.")
+            try:
+                test_user = User(
+                    email='user@test.local',
+                    name='Test Benutzer',
+                    is_test_user=True,
+                    is_lehrer=False  # Debug-Benutzer ist kein Lehrer
+                )
+                test_user.set_password('user')
+                db.session.add(test_user)
+                db.session.commit()
+                print("Testbenutzer 'user' wurde erstellt.")
+            except IntegrityError:
+                # Bei Race Condition (mehrere Worker) einfach ignorieren
+                db.session.rollback()
