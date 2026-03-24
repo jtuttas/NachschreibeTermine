@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Nicht autorisiert - Nachschreibetermine{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="py-5">
+            <i class="bi bi-shield-x text-danger" style="font-size: 5rem;"></i>
+            <h2 class="mt-4">Zugriff verweigert</h2>
+            <p class="lead text-muted">
+                Sie haben keine Berechtigung, auf diese Seite zuzugreifen.
+            </p>
+            <p>
+                Um auf das Nachschreibetermine-System zugreifen zu können, 
+                müssen Sie Mitglied der Gruppe "Lehrer" sein.
+            </p>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-arrow-left"></i> Zurück zur Anmeldung
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

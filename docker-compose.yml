@@ -1,0 +1,35 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - DATABASE_URL=sqlite:///data/nachschreibetermine.db
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_AUTHORITY=${AZURE_AUTHORITY}
+      - MAX_SCHUELER_PRO_TERMIN=${MAX_SCHUELER_PRO_TERMIN:-30}
+      - DEBUG_MODE=${DEBUG_MODE:-False}
+      - TERMINE_CSV_PATH=/app/data/termine.csv
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-True}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+    volumes:
+      - ./data:/app/data
+      - ./termine.csv:/app/data/termine.csv:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  data:

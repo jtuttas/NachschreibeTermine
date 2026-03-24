@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Anmelden - Nachschreibetermine{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h3 class="mb-0">
+                    <i class="bi bi-calendar-check"></i><br>
+                    Nachschreibetermine
+                </h3>
+                <p class="mb-0 mt-2">Buchungssystem für Lehrkräfte</p>
+            </div>
+            
+            <div class="card-body p-4">
+                <h5 class="card-title text-center mb-4">Anmelden</h5>
+                
+                <!-- Azure AD Login -->
+                <div class="d-grid gap-2 mb-4">
+                    <a href="{{ url_for('auth.login_azure') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-microsoft"></i> Mit Microsoft anmelden
+                    </a>
+                </div>
+                
+                {% if config.DEBUG_MODE %}
+                <hr class="my-4">
+                
+                <!-- Debug Login -->
+                <div class="text-muted text-center mb-3">
+                    <small>Debug-Modus aktiv</small>
+                </div>
+                
+                <form method="POST" action="{{ url_for('auth.login_debug') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Benutzername</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="Benutzername eingeben">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Passwort</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Passwort eingeben">
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="bi bi-bug"></i> Debug-Login
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer text-muted text-center py-3">
+                <small>Für Lehrkräfte der Schule</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
