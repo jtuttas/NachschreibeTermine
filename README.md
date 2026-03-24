@@ -94,6 +94,7 @@ docker pull ghcr.io/jtuttas/nachschreibetermine:latest
 docker run -d -p 5000:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DEBUG_MODE=True \
+  -e DATABASE_URL=sqlite:///data/nachschreibetermine.db \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   ghcr.io/jtuttas/nachschreibetermine:latest
@@ -109,6 +110,7 @@ docker build -t nachschreibetermine .
 docker run -d -p 5000:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DEBUG_MODE=True \
+  -e DATABASE_URL=sqlite:///data/nachschreibetermine.db \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   nachschreibetermine
@@ -117,6 +119,8 @@ docker run -d -p 5000:5000 \
 ### Persistente Daten
 
 Die SQLite-Datenbank wird im `data/`-Verzeichnis gespeichert und bleibt bei Container-Neustarts erhalten.
+
+**Wichtig:** Die Umgebungsvariable `DATABASE_URL=sqlite:///data/nachschreibetermine.db` muss gesetzt werden, damit die Datenbank im gemounteten Volume gespeichert wird. Ohne diese Variable wird die Datenbank im Container-internen Verzeichnis erstellt und geht bei Neustarts verloren.
 
 ### HTTPS-Konfiguration
 
@@ -157,9 +161,12 @@ Im Entwicklungsmodus (`DEBUG_MODE=True`) kann der Testbenutzer verwendet werden:
 | `AZURE_CLIENT_SECRET` | Azure AD Client Secret | - |
 | `AZURE_TENANT_ID` | Azure AD Tenant ID | - |
 | `SECRET_KEY` | Flask Secret Key | dev-secret-key |
+| `DATABASE_URL` | Datenbank-Pfad | sqlite:///nachschreibetermine.db |
 | `MAX_SCHUELER_PRO_TERMIN` | Max. Schüler pro Termin | 30 |
 | `DEBUG_MODE` | Debug-Login aktivieren | False |
 | `TERMINE_CSV_PATH` | Pfad zur Termin-CSV | termine.csv |
+
+> **Hinweis für Docker:** Setze `DATABASE_URL=sqlite:///data/nachschreibetermine.db` um die Datenbank im gemounteten Volume zu persistieren.
 
 ### E-Mail Konfiguration
 
