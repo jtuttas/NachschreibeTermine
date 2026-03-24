@@ -6,7 +6,7 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
       - FLASK_ENV=${FLASK_ENV:-production}
-      - DATABASE_URL=sqlite:///data/nachschreibetermine.db
+      - DATABASE_URL=sqlite:////app/data/nachschreibetermine.db
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID}

@@ -1,6 +1,7 @@
 import csv
 import os
 from datetime import datetime, date, time
+from sqlalchemy.exc import IntegrityError
 from io import BytesIO
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app, send_file
@@ -481,7 +482,12 @@ def load_termine_from_csv(app):
                         raum=row.get('raum')
                     )
                     db.session.add(termin)
-                    new_termine.append(termin)
+                    try:
+                        db.session.flush()  # Sofort prüfen, ob Duplikat
+                        new_termine.append(termin)
+                    except IntegrityError:
+                        db.session.rollback()
+                        app.logger.info(f'Termin {datum} {uhrzeit} existiert bereits - überspringe')
                     
             except Exception as e:
                 app.logger.error(f'Fehler beim Laden des Termins: {str(e)}')
@@ -509,3 +515,44 @@ def load_termine_from_csv(app):
     db.session.commit()
     app.logger.info(f'{len(new_termine)} Termine aus CSV geladen, {removed_count} veraltete Termine entfernt.')
     return len(new_termine)
+
+
+def cleanup_duplicate_termine(app):
+    """Entfernt doppelte Termine aus der Datenbank.
+    
+    Bei Duplikaten wird der Termin mit den meisten Buchungen behalten,
+    bei gleicher Anzahl der älteste (niedrigste ID).
+    """
+    from sqlalchemy import func
+    
+    with app.app_context():
+        # Finde alle Datum/Uhrzeit-Kombinationen mit Duplikaten
+        duplicates = db.session.query(
+            Termin.datum, Termin.uhrzeit, func.count(Termin.id).label('count')
+        ).group_by(Termin.datum, Termin.uhrzeit).having(func.count(Termin.id) > 1).all()
+        
+        removed_count = 0
+        for dup in duplicates:
+            # Hole alle Termine mit diesem Datum/Uhrzeit
+            termine = Termin.query.filter_by(
+                datum=dup.datum, 
+                uhrzeit=dup.uhrzeit
+            ).order_by(Termin.id.asc()).all()
+            
+            # Behalte den Termin mit den meisten Buchungen (oder den ältesten)
+            termine_sorted = sorted(termine, key=lambda t: (-t.buchungen.count(), t.id))
+            keep = termine_sorted[0]
+            
+            for termin in termine_sorted[1:]:
+                # Verschiebe Buchungen zum behaltenen Termin
+                for buchung in termin.buchungen:
+                    buchung.termin_id = keep.id
+                db.session.delete(termin)
+                removed_count += 1
+                app.logger.info(f'Duplikat entfernt: Termin {termin.datum} {termin.uhrzeit} (ID {termin.id})')
+        
+        if removed_count > 0:
+            db.session.commit()
+            app.logger.info(f'{removed_count} doppelte Termine entfernt.')
+        
+        return removed_count

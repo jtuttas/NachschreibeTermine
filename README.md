@@ -94,7 +94,7 @@ docker pull ghcr.io/jtuttas/nachschreibetermine:latest
 docker run -d -p 5000:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DEBUG_MODE=True \
-  -e DATABASE_URL=sqlite:///data/nachschreibetermine.db \
+  -e DATABASE_URL=sqlite:////app/data/nachschreibetermine.db \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   ghcr.io/jtuttas/nachschreibetermine:latest
@@ -110,7 +110,7 @@ docker build -t nachschreibetermine .
 docker run -d -p 5000:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DEBUG_MODE=True \
-  -e DATABASE_URL=sqlite:///data/nachschreibetermine.db \
+  -e DATABASE_URL=sqlite:////app/data/nachschreibetermine.db \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   nachschreibetermine
@@ -120,7 +120,7 @@ docker run -d -p 5000:5000 \
 
 Die SQLite-Datenbank wird im `data/`-Verzeichnis gespeichert und bleibt bei Container-Neustarts erhalten.
 
-**Wichtig:** Die Umgebungsvariable `DATABASE_URL=sqlite:///data/nachschreibetermine.db` muss gesetzt werden, damit die Datenbank im gemounteten Volume gespeichert wird. Ohne diese Variable wird die Datenbank im Container-internen Verzeichnis erstellt und geht bei Neustarts verloren.
+**Wichtig:** Die Umgebungsvariable `DATABASE_URL=sqlite:////app/data/nachschreibetermine.db` (beachte die 4 Schrägstriche für den absoluten Pfad) muss gesetzt werden, damit die Datenbank im gemounteten Volume gespeichert wird. Ohne diese Variable wird die Datenbank im Container-internen Verzeichnis erstellt und geht bei Neustarts verloren.
 
 ### HTTPS-Konfiguration
 
@@ -166,7 +166,7 @@ Im Entwicklungsmodus (`DEBUG_MODE=True`) kann der Testbenutzer verwendet werden:
 | `DEBUG_MODE` | Debug-Login aktivieren | False |
 | `TERMINE_CSV_PATH` | Pfad zur Termin-CSV | termine.csv |
 
-> **Hinweis für Docker:** Setze `DATABASE_URL=sqlite:///data/nachschreibetermine.db` um die Datenbank im gemounteten Volume zu persistieren.
+> **Hinweis für Docker:** Setze `DATABASE_URL=sqlite:////app/data/nachschreibetermine.db` (4 Schrägstriche für absoluten Pfad) um die Datenbank im gemounteten Volume zu persistieren.
 
 ### E-Mail Konfiguration
 

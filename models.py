@@ -40,6 +40,9 @@ class User(UserMixin, db.Model):
 class Termin(db.Model):
     """Modell für Nachschreibetermine"""
     __tablename__ = 'termine'
+    __table_args__ = (
+        db.UniqueConstraint('datum', 'uhrzeit', name='unique_termin_datum_uhrzeit'),
+    )
     
     id = db.Column(db.Integer, primary_key=True)
     datum = db.Column(db.Date, nullable=False)

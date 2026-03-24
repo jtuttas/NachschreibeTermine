@@ -5,7 +5,7 @@ from config import config
 from models import db, init_db
 from auth import login_manager
 from email_service import mail, setup_scheduler
-from routes import auth_bp, main_bp, termine_bp, load_termine_from_csv
+from routes import auth_bp, main_bp, termine_bp, load_termine_from_csv, cleanup_duplicate_termine
 
 csrf = CSRFProtect()
 
@@ -29,8 +29,9 @@ def create_app(config_name=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(termine_bp)
     
-    # Termine aus CSV laden
+    # Doppelte Termine bereinigen und aus CSV laden
     with app.app_context():
+        cleanup_duplicate_termine(app)
         load_termine_from_csv(app)
     
     # Scheduler für E-Mail-Berichte einrichten (nur im Produktionsmodus)
