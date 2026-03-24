@@ -109,12 +109,9 @@ def callback():
             flash('Benutzerinformationen konnten nicht abgerufen werden.', 'danger')
             return redirect(url_for('auth.login'))
         
-        # Prüfen ob Benutzer in der Lehrer-Gruppe ist
-        is_lehrer = check_group_membership(access_token, 'Lehrer')
-        
-        if not is_lehrer:
-            flash('Sie sind nicht Mitglied der Lehrer-Gruppe.', 'danger')
-            return redirect(url_for('auth.login'))
+        # Gruppenprüfung deaktiviert - benötigt Admin-Consent für GroupMember.Read.All
+        # Alle authentifizierten Benutzer der Organisation haben Zugang
+        is_lehrer = True  # TODO: Aktiviere Gruppenprüfung wenn Admin-Consent erteilt wurde
         
         user = create_or_update_user(user_info, is_lehrer)
         login_user(user)

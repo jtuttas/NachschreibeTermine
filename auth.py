@@ -64,9 +64,20 @@ def get_user_info(access_token):
     return None
 
 
-def check_group_membership(access_token, group_name='Lehrer'):
-    """Überprüft ob der Benutzer Mitglied einer bestimmten Gruppe ist"""
+def check_group_membership(access_token, group_name_or_id=None):
+    """Überprüft ob der Benutzer Mitglied einer bestimmten Gruppe ist.
+    
+    Args:
+        access_token: OAuth2 Access Token
+        group_name_or_id: Gruppenname oder Gruppen-Object-ID (aus Azure AD)
+    
+    Returns:
+        True wenn Benutzer Mitglied ist, sonst False
+    """
     import requests
+    
+    if not group_name_or_id:
+        group_name_or_id = current_app.config.get('AZURE_ALLOWED_GROUP', 'Lehrer')
     
     headers = {'Authorization': f'Bearer {access_token}'}
     response = requests.get(
@@ -77,7 +88,8 @@ def check_group_membership(access_token, group_name='Lehrer'):
     if response.status_code == 200:
         groups = response.json().get('value', [])
         for group in groups:
-            if group.get('displayName') == group_name:
+            # Prüfe sowohl displayName als auch ID
+            if group.get('displayName') == group_name_or_id or group.get('id') == group_name_or_id:
                 return True
     return False
 

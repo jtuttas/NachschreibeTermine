@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)  # .env überschreibt existierende Umgebungsvariablen
 
 
 class Config:
@@ -16,7 +16,8 @@ class Config:
     AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
     AZURE_AUTHORITY = os.environ.get('AZURE_AUTHORITY', f"https://login.microsoftonline.com/{os.environ.get('AZURE_TENANT_ID', 'common')}")
     AZURE_REDIRECT_PATH = "/auth/callback"
-    AZURE_SCOPE = ["User.Read"]
+    AZURE_SCOPE = ["User.Read"]  # GroupMember.Read.All entfernt - benötigt Admin-Consent
+    AZURE_ALLOWED_GROUP = os.environ.get('AZURE_ALLOWED_GROUP', 'Lehrer')  # Gruppenname oder Gruppen-ID
     
     # E-Mail Konfiguration
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.example.com')

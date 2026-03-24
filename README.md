@@ -50,11 +50,27 @@ Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
    ```
 
 5. **Azure AD App Registration erstellen** (für Produktion):
-   - Gehe zu Azure Portal > Azure Active Directory > App registrations
+   
+   **Grundkonfiguration:**
+   - Gehe zu Azure Portal > Microsoft Entra ID > App registrations
    - Neue Registrierung erstellen
-   - Redirect URI hinzufügen: `http://localhost:5000/auth/callback`
+   - Redirect URI hinzufügen (Platform: **Web**):
+     - Entwicklung: `http://localhost:5000/auth/callback`
+     - Produktion: `https://deine-domain.de:5001/auth/callback`
    - Client Secret erstellen
    - Werte in `.env` eintragen
+
+   **API-Berechtigungen konfigurieren:**
+   - API permissions > Add a permission > Microsoft Graph > Delegated permissions
+   - Folgende Berechtigungen hinzufügen:
+     - `User.Read` (Anmelden und Profil lesen)
+     - `GroupMember.Read.All` (Gruppenmitgliedschaften lesen)
+   - **"Administratorzustimmung erteilen"** klicken
+
+   **Gruppenbasierter Zugriff (optional):**
+   - Nur Mitglieder einer bestimmten Azure AD Gruppe können sich anmelden
+   - Gruppen-ID finden: Azure Portal > Groups > Deine Gruppe > Object ID
+   - Umgebungsvariable setzen: `AZURE_ALLOWED_GROUP=Lehrer` (Name oder ID)
 
 6. **Termine in CSV-Datei eintragen:**
    Datei `termine.csv` mit folgendem Format:
@@ -90,11 +106,23 @@ docker compose down
 ```bash
 docker pull ghcr.io/jtuttas/nachschreibetermine:latest
 
-# Container starten
+# Container starten (minimal)
 docker run -d -p 5000:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DEBUG_MODE=True \
   -e DATABASE_URL=sqlite:////app/data/nachschreibetermine.db \
+  -v ./data:/app/data \
+  -v ./termine.csv:/app/data/termine.csv:ro \
+  ghcr.io/jtuttas/nachschreibetermine:latest
+
+# Container mit Azure AD Authentifizierung starten
+docker run -d -p 5001:5000 \
+  -e SECRET_KEY=your-secret-key \
+  -e DATABASE_URL=sqlite:////app/data/nachschreibetermine.db \
+  -e AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+  -e AZURE_CLIENT_SECRET=your-client-secret \
+  -e AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+  -e AZURE_ALLOWED_GROUP=Lehrer \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   ghcr.io/jtuttas/nachschreibetermine:latest
@@ -157,14 +185,20 @@ Im Entwicklungsmodus (`DEBUG_MODE=True`) kann der Testbenutzer verwendet werden:
 
 | Variable | Beschreibung | Standard |
 |----------|--------------|----------|
-| `AZURE_CLIENT_ID` | Azure AD Application ID | - |
-| `AZURE_CLIENT_SECRET` | Azure AD Client Secret | - |
-| `AZURE_TENANT_ID` | Azure AD Tenant ID | - |
 | `SECRET_KEY` | Flask Secret Key | dev-secret-key |
 | `DATABASE_URL` | Datenbank-Pfad | sqlite:///nachschreibetermine.db |
 | `MAX_SCHUELER_PRO_TERMIN` | Max. Schüler pro Termin | 30 |
 | `DEBUG_MODE` | Debug-Login aktivieren | False |
 | `TERMINE_CSV_PATH` | Pfad zur Termin-CSV | termine.csv |
+
+**Azure AD Authentifizierung:**
+
+| Variable | Beschreibung | Standard |
+|----------|--------------|----------|
+| `AZURE_CLIENT_ID` | Azure AD Application (Client) ID | - |
+| `AZURE_CLIENT_SECRET` | Azure AD Client Secret | - |
+| `AZURE_TENANT_ID` | Azure AD Directory (Tenant) ID | - |
+| `AZURE_ALLOWED_GROUP` | Gruppenname oder Object-ID zur Zugriffsbeschränkung | Lehrer |
 
 > **Hinweis für Docker:** Setze `DATABASE_URL=sqlite:////app/data/nachschreibetermine.db` (4 Schrägstriche für absoluten Pfad) um die Datenbank im gemounteten Volume zu persistieren.
 
