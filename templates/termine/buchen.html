@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Schüler eintragen - Nachschreibetermine{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('termine.detail', termin_id=termin.id) }}">Termin {{ termin.datum.strftime('%d.%m.%Y') }}</a></li>
+                <li class="breadcrumb-item active">Schüler eintragen</li>
+            </ol>
+        </nav>
+        
+        <h2>
+            <i class="bi bi-person-plus"></i> Schüler für Nachschreibetermin eintragen
+        </h2>
+    </div>
+</div>
+
+<!-- Termin-Info -->
+<div class="alert alert-info">
+    <div class="row">
+        <div class="col-md-3">
+            <strong><i class="bi bi-calendar"></i> Datum:</strong> {{ termin.datum.strftime('%d.%m.%Y') }}
+        </div>
+        <div class="col-md-3">
+            <strong><i class="bi bi-clock"></i> Uhrzeit:</strong> {{ termin.uhrzeit.strftime('%H:%M') }} Uhr
+        </div>
+        <div class="col-md-3">
+            <strong><i class="bi bi-geo-alt"></i> Raum:</strong> {{ termin.raum or 'N/A' }}
+        </div>
+        <div class="col-md-3">
+            <strong><i class="bi bi-person"></i> Aufsicht:</strong> {{ termin.aufsicht_email }}
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-plus"></i> Schülerinformationen
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('termine.buchen', termin_id=termin.id) }}" id="buchungForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="schueler_name" class="form-label">
+                                Name des Schülers <span class="text-danger">*</span>
+                            </label>
+                            {{ form.schueler_name(class="form-control", placeholder="Vor- und Nachname") }}
+                            {% if form.schueler_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.schueler_name.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="klasse" class="form-label">Klasse</label>
+                            {{ form.klasse(class="form-control", placeholder="z.B. 10a") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dauer_minuten" class="form-label">
+                            Dauer der Klassenarbeit (Minuten) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            {{ form.dauer_minuten(class="form-control", min="15", max="300") }}
+                            <span class="input-group-text">Minuten</span>
+                        </div>
+                        <div class="form-text">Standard: 90 Minuten. Minimum: 15 Minuten, Maximum: 300 Minuten.</div>
+                        {% if form.dauer_minuten.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.dauer_minuten.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.ist_digital(class="form-check-input", id="ist_digital") }}
+                            <label class="form-check-label" for="ist_digital">
+                                <i class="bi bi-laptop"></i> Digitale Klassenarbeit (Moodle)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Moodle-Felder (werden nur bei digitaler Klassenarbeit angezeigt) -->
+                    <div id="moodleFelder" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-mortarboard"></i> Moodle-Informationen
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    <label for="moodle_url" class="form-label">
+                                        Moodle-Kurs URL <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.moodle_url(class="form-control", placeholder="https://moodle.schule.de/course/view.php?id=...") }}
+                                    <div class="form-text">Die URL zum Moodle-Kurs mit der Klassenarbeit.</div>
+                                    {% if form.moodle_url.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.moodle_url.errors[0] }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="moodle_passwort" class="form-label">Passwort für die Klassenarbeit</label>
+                                    <div class="input-group">
+                                        {{ form.moodle_passwort(class="form-control", placeholder="Klassenarbeit-Passwort", id="moodle_passwort") }}
+                                        <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Das Passwort, das der Schüler für die Klassenarbeit benötigt.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Schüler eintragen
+                        </button>
+                        <a href="{{ url_for('termine.detail', termin_id=termin.id) }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Abbrechen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const istDigital = document.getElementById('ist_digital');
+    const moodleFelder = document.getElementById('moodleFelder');
+    const togglePassword = document.getElementById('togglePassword');
+    const moodlePasswort = document.getElementById('moodle_passwort');
+    
+    // Moodle-Felder ein-/ausblenden
+    function toggleMoodleFelder() {
+        if (istDigital.checked) {
+            moodleFelder.style.display = 'block';
+        } else {
+            moodleFelder.style.display = 'none';
+        }
+    }
+    
+    istDigital.addEventListener('change', toggleMoodleFelder);
+    toggleMoodleFelder(); // Initial prüfen
+    
+    // Passwort anzeigen/verbergen
+    togglePassword.addEventListener('click', function() {
+        const type = moodlePasswort.getAttribute('type') === 'password' ? 'text' : 'password';
+        moodlePasswort.setAttribute('type', type);
+        this.querySelector('i').classList.toggle('bi-eye');
+        this.querySelector('i').classList.toggle('bi-eye-slash');
+    });
+});
+</script>
+{% endblock %}
