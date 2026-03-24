@@ -1,6 +1,6 @@
 # Nachschreibetermine Buchungssystem
 
-[![Docker Build](https://github.com/OWNER/nachschreibetermine/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/OWNER/nachschreibetermine/actions/workflows/docker-publish.yml)
+[![Docker Build](https://github.com/jtuttas/NachschreibeTermine/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/jtuttas/NachschreibeTermine/actions/workflows/docker-publish.yml)
 
 Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
 
@@ -88,8 +88,7 @@ docker compose down
 ### Image aus GitHub Container Registry
 
 ```bash
-# Image ziehen (ersetze OWNER mit deinem GitHub-Benutzernamen)
-docker pull ghcr.io/OWNER/nachschreibetermine:latest
+docker pull ghcr.io/jtuttas/nachschreibetermine:latest
 
 # Container starten
 docker run -d -p 5000:5000 \
@@ -97,7 +96,7 @@ docker run -d -p 5000:5000 \
   -e DEBUG_MODE=True \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
-  ghcr.io/OWNER/nachschreibetermine:latest
+  ghcr.io/jtuttas/nachschreibetermine:latest
 ```
 
 ### Manuell mit Docker
