@@ -20,8 +20,11 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="bi bi-calendar-check"></i> Nachschreibetermine
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+                <span class="bg-white rounded p-1 me-2 d-inline-flex">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" height="45">
+                </span>
+                Nachschreibetermine
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
