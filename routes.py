@@ -252,6 +252,41 @@ def buchen(termin_id):
     return render_template('termine/buchen.html', form=form, termin=termin)
 
 
+@termine_bp.route('/buchung/<int:buchung_id>/bearbeiten', methods=['GET', 'POST'])
+@login_required
+@lehrer_required
+def buchung_bearbeiten(buchung_id):
+    """Buchung bearbeiten"""
+    buchung = Buchung.query.get_or_404(buchung_id)
+    
+    # Nur eigene Buchungen bearbeiten
+    if buchung.lehrer_id != current_user.id:
+        flash('Sie können nur eigene Buchungen bearbeiten.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Prüfen ob Termin in der Vergangenheit
+    if buchung.termin.ist_vergangen:
+        flash('Buchungen für vergangene Termine können nicht bearbeitet werden.', 'warning')
+        return redirect(url_for('main.dashboard'))
+    
+    form = BuchungForm(obj=buchung)
+    
+    if form.validate_on_submit():
+        buchung.schueler_name = form.schueler_name.data
+        buchung.klasse = form.klasse.data
+        buchung.dauer_minuten = form.dauer_minuten.data
+        buchung.ist_digital = form.ist_digital.data
+        buchung.moodle_url = form.moodle_url.data if form.ist_digital.data else None
+        buchung.moodle_passwort = form.moodle_passwort.data if form.ist_digital.data else None
+        
+        db.session.commit()
+        
+        flash(f'Buchung für {buchung.schueler_name} wurde aktualisiert.', 'success')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('termine/buchen.html', form=form, termin=buchung.termin, buchung=buchung, edit_mode=True)
+
+
 @termine_bp.route('/buchung/<int:buchung_id>/loeschen', methods=['POST'])
 @login_required
 @lehrer_required
@@ -264,14 +299,13 @@ def buchung_loeschen(buchung_id):
         flash('Sie können nur eigene Buchungen löschen.', 'danger')
         return redirect(url_for('main.dashboard'))
     
-    termin_id = buchung.termin_id
     schueler_name = buchung.schueler_name
     
     db.session.delete(buchung)
     db.session.commit()
     
     flash(f'Buchung für {schueler_name} wurde gelöscht.', 'success')
-    return redirect(url_for('termine.detail', termin_id=termin_id))
+    return redirect(url_for('main.dashboard'))
 
 
 @termine_bp.route('/<int:termin_id>/teilnehmerliste')
@@ -358,20 +392,26 @@ def teilnehmerliste_pdf(termin_id):
     
     if buchungen:
         # Tabellendaten
-        data = [['#', 'Name', 'Klasse', 'Dauer', 'Digital', 'Anwesend']]
+        data = [['#', 'Name', 'Klasse', 'Dauer', 'Digital', 'Anw.']]
         
         for i, buchung in enumerate(buchungen, 1):
+            # Anwesenheitssymbol: Häkchen für anwesend, X für abwesend
+            if buchung.ist_anwesend:
+                anwesend_symbol = '✓'
+            else:
+                anwesend_symbol = '✗'
+            
             data.append([
                 str(i),
                 buchung.schueler_name,
                 buchung.klasse or '-',
                 f'{buchung.dauer_minuten} Min.',
                 'Ja' if buchung.ist_digital else 'Nein',
-                '☐'  # Checkbox zum Ankreuzen
+                anwesend_symbol
             ])
         
         # Tabelle erstellen
-        table = Table(data, colWidths=[1*cm, 6*cm, 2*cm, 2.5*cm, 2*cm, 2*cm])
+        table = Table(data, colWidths=[1*cm, 5.5*cm, 2*cm, 2.5*cm, 1.5*cm, 1.5*cm])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),

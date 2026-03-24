@@ -96,6 +96,7 @@
                         <th>Klasse</th>
                         <th>Dauer</th>
                         <th>Art</th>
+                        <th>Moodle-Kurs / Kennwort</th>
                         <th>Lehrkraft</th>
                         <th>Status</th>
                     </tr>
@@ -112,15 +113,22 @@
                                 <span class="badge bg-info">
                                     <i class="bi bi-laptop"></i> Digital
                                 </span>
-                                {% if buchung.moodle_url %}
-                                    <a href="{{ buchung.moodle_url }}" target="_blank" class="btn btn-sm btn-link">
-                                        <i class="bi bi-box-arrow-up-right"></i>
-                                    </a>
-                                {% endif %}
                             {% else %}
                                 <span class="badge bg-secondary">
                                     <i class="bi bi-file-earmark-text"></i> Papier
                                 </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if buchung.ist_digital and buchung.moodle_url %}
+                                <a href="{{ buchung.moodle_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i> Moodle
+                                </a>
+                                {% if buchung.moodle_passwort %}
+                                    <br><small class="text-muted mt-1"><i class="bi bi-key"></i> {{ buchung.moodle_passwort }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>{{ buchung.erstellt_von.name }}</td>

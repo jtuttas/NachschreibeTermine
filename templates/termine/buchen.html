@@ -9,12 +9,16 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="{{ url_for('termine.detail', termin_id=termin.id) }}">Termin {{ termin.datum.strftime('%d.%m.%Y') }}</a></li>
-                <li class="breadcrumb-item active">Schüler eintragen</li>
+                <li class="breadcrumb-item active">{% if edit_mode %}Buchung bearbeiten{% else %}Schüler eintragen{% endif %}</li>
             </ol>
         </nav>
         
         <h2>
+            {% if edit_mode %}
+            <i class="bi bi-pencil"></i> Buchung bearbeiten
+            {% else %}
             <i class="bi bi-person-plus"></i> Schüler für Nachschreibetermin eintragen
+            {% endif %}
         </h2>
     </div>
 </div>
@@ -46,7 +50,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('termine.buchen', termin_id=termin.id) }}" id="buchungForm">
+                <form method="POST" action="{% if edit_mode %}{{ url_for('termine.buchung_bearbeiten', buchung_id=buchung.id) }}{% else %}{{ url_for('termine.buchen', termin_id=termin.id) }}{% endif %}" id="buchungForm">
                     {{ form.hidden_tag() }}
                     
                     <div class="row">
@@ -134,9 +138,13 @@
                     
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-success btn-lg">
+                            {% if edit_mode %}
+                            <i class="bi bi-check-circle"></i> Änderungen speichern
+                            {% else %}
                             <i class="bi bi-check-circle"></i> Schüler eintragen
+                            {% endif %}
                         </button>
-                        <a href="{{ url_for('termine.detail', termin_id=termin.id) }}" class="btn btn-outline-secondary btn-lg">
+                        <a href="{% if edit_mode %}{{ url_for('main.dashboard') }}{% else %}{{ url_for('termine.detail', termin_id=termin.id) }}{% endif %}" class="btn btn-outline-secondary btn-lg">
                             <i class="bi bi-x-circle"></i> Abbrechen
                         </a>
                     </div>

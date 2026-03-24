@@ -29,7 +29,7 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card bg-success text-white">
+        <div class="card bg-secondary text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -43,7 +43,7 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card bg-info text-white">
+        <div class="card bg-accent text-white">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -96,13 +96,18 @@
                             {% endif %}
                         </td>
                         <td>
-                            <form method="POST" action="{{ url_for('termine.buchung_loeschen', buchung_id=buchung.id) }}" 
-                                  class="d-inline" onsubmit="return confirm('Buchung wirklich löschen?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            <a href="{{ url_for('termine.buchung_bearbeiten', buchung_id=buchung.id) }}" 
+                               class="btn btn-sm btn-outline-primary me-1" title="Bearbeiten">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal"
+                                    data-buchung-id="{{ buchung.id }}"
+                                    data-schueler-name="{{ buchung.schueler_name }}"
+                                    title="Löschen">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -189,4 +194,51 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Lösch-Bestätigungs-Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Buchung löschen
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <p>Möchten Sie die Buchung für <strong id="deleteSchuelerName"></strong> wirklich löschen?</p>
+                <p class="text-muted mb-0">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Abbrechen
+                </button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Löschen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const buchungId = button.getAttribute('data-buchung-id');
+            const schuelerName = button.getAttribute('data-schueler-name');
+            
+            document.getElementById('deleteSchuelerName').textContent = schuelerName;
+            document.getElementById('deleteForm').action = '/termine/buchung/' + buchungId + '/loeschen';
+        });
+    }
+});
+</script>
 {% endblock %}

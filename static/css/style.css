@@ -1,5 +1,17 @@
 /* Nachschreibetermine - Custom Styles */
 
+/* Schulfarben als CSS-Variablen */
+:root {
+    --bs-primary: #145189;
+    --bs-primary-rgb: 20, 81, 137;
+    --bs-secondary: #13548C;
+    --bs-secondary-rgb: 19, 84, 140;
+    --bs-accent: #F9542F;
+    --bs-accent-rgb: 249, 84, 47;
+    --bs-link-color: #145189;
+    --bs-link-hover-color: #0e3a61;
+}
+
 /* Allgemeine Anpassungen */
 body {
     min-height: 100vh;
@@ -12,9 +24,93 @@ main {
     flex: 1;
 }
 
+/* Links */
+a {
+    color: var(--bs-primary);
+}
+
+a:hover {
+    color: #0e3a61;
+}
+
 /* Navbar */
+.navbar {
+    background-color: var(--bs-primary) !important;
+}
+
 .navbar-brand {
     font-weight: 600;
+}
+
+/* Primary Buttons */
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #0e3a61;
+    border-color: #0e3a61;
+}
+
+.btn-primary:active {
+    background-color: #0c3050 !important;
+    border-color: #0c3050 !important;
+}
+
+/* Outline Primary */
+.btn-outline-primary {
+    color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+}
+
+/* Accent/Warning Buttons (für wichtige Aktionen) */
+.btn-accent,
+.btn-warning {
+    background-color: var(--bs-accent);
+    border-color: var(--bs-accent);
+    color: #fff;
+}
+
+.btn-accent:hover,
+.btn-warning:hover {
+    background-color: #e04425;
+    border-color: #e04425;
+    color: #fff;
+}
+
+/* Background Colors */
+.bg-primary {
+    background-color: var(--bs-primary) !important;
+}
+
+.bg-secondary {
+    background-color: var(--bs-secondary) !important;
+}
+
+.bg-accent {
+    background-color: var(--bs-accent) !important;
+}
+
+/* Text Colors */
+.text-primary {
+    color: var(--bs-primary) !important;
+}
+
+.text-accent {
+    color: var(--bs-accent) !important;
+}
+
+/* Border Colors */
+.border-primary {
+    border-color: var(--bs-primary) !important;
 }
 
 /* Karten */
@@ -71,8 +167,13 @@ main {
 /* Formulare */
 .form-control:focus,
 .form-check-input:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-switch .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
 }
 
 .form-switch .form-check-input {
