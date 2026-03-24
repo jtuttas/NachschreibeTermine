@@ -31,3 +31,5 @@ Thumbs.db
 
 # Backup files
 *.bak
+venv/*
+venv/Lib/site-packages/click/__pycache__/types.cpython-310.pyc
