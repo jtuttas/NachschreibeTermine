@@ -105,6 +105,23 @@ def callback():
         access_token = result['access_token']
         user_info = get_user_info(access_token)
         
+        # Debug: Alle Benutzerinformationen auf der Konsole ausgeben
+        print("\n" + "="*60)
+        print("AZURE AD LOGIN - BENUTZERINFORMATIONEN")
+        print("="*60)
+        print(f"Token Result Keys: {result.keys()}")
+        if 'id_token_claims' in result:
+            print("\nID Token Claims:")
+            for key, value in result.get('id_token_claims', {}).items():
+                print(f"  {key}: {value}")
+        print("\nUser Info (Microsoft Graph):")
+        if user_info:
+            for key, value in user_info.items():
+                print(f"  {key}: {value}")
+        else:
+            print("  (keine Daten)")
+        print("="*60 + "\n")
+        
         if not user_info:
             flash('Benutzerinformationen konnten nicht abgerufen werden.', 'danger')
             return redirect(url_for('auth.login'))
