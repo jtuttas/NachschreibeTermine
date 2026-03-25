@@ -499,6 +499,7 @@ def load_termine_from_csv(app):
     # Sammle alle Termine aus der CSV
     csv_termine = set()
     new_termine = []
+    processed_in_session = set()  # Verhindert Duplikate innerhalb einer Import-Session
     
     reader = csv.DictReader(StringIO(csv_content))
     
@@ -506,9 +507,16 @@ def load_termine_from_csv(app):
         try:
             datum = datetime.strptime(row['datum'], '%Y-%m-%d').date()
             uhrzeit = datetime.strptime(row['uhrzeit'], '%H:%M').time()
-            csv_termine.add((datum, uhrzeit))
+            termin_key = (datum, uhrzeit)
+            csv_termine.add(termin_key)
             
-            # Prüfen ob Termin bereits existiert
+            # Bereits in dieser Session verarbeitet?
+            if termin_key in processed_in_session:
+                app.logger.debug(f'Termin {datum} {uhrzeit} bereits in Session verarbeitet - überspringe')
+                continue
+            processed_in_session.add(termin_key)
+            
+            # Prüfen ob Termin bereits in DB existiert
             existing = Termin.query.filter_by(
                 datum=datum,
                 uhrzeit=uhrzeit
