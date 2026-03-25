@@ -1,8 +1,9 @@
 import csv
 import os
+import requests
 from datetime import datetime, date, time
 from sqlalchemy.exc import IntegrityError
-from io import BytesIO
+from io import BytesIO, StringIO
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app, send_file
 from flask_login import login_user, logout_user, login_required, current_user
@@ -457,54 +458,79 @@ def teilnehmerliste_pdf(termin_id):
 # --- Hilfsfunktionen ---
 
 def load_termine_from_csv(app):
-    """Lädt Termine aus einer CSV-Datei und synchronisiert mit der Datenbank.
+    """Lädt Termine aus einer CSV-Datei oder OneDrive-URL und synchronisiert mit der Datenbank.
     
+    - Wenn TERMINE_CSV_URL gesetzt ist, wird die CSV von dort heruntergeladen
+    - Ansonsten wird die lokale Datei TERMINE_CSV_PATH verwendet
     - Neue Termine aus der CSV werden hinzugefügt
     - Termine ohne Buchungen, die nicht mehr in der CSV sind, werden entfernt
     - Termine mit Buchungen bleiben erhalten (auch wenn nicht in CSV)
     """
+    csv_url = app.config.get('TERMINE_CSV_URL')
     csv_path = app.config['TERMINE_CSV_PATH']
     
-    if not os.path.exists(csv_path):
-        app.logger.warning(f'CSV-Datei nicht gefunden: {csv_path}')
+    csv_content = None
+    
+    # Versuche zuerst von URL zu laden
+    if csv_url:
+        try:
+            app.logger.info(f'Lade Termine von URL: {csv_url[:50]}...')
+            response = requests.get(csv_url, timeout=30)
+            response.raise_for_status()
+            csv_content = response.text
+            app.logger.info(f'CSV erfolgreich von URL geladen ({len(csv_content)} Bytes)')
+        except requests.RequestException as e:
+            app.logger.error(f'Fehler beim Laden der CSV von URL: {str(e)}')
+            # Fallback auf lokale Datei
+            csv_url = None
+    
+    # Fallback: Lokale Datei
+    if not csv_url:
+        if not os.path.exists(csv_path):
+            app.logger.warning(f'CSV-Datei nicht gefunden: {csv_path}')
+            return 0
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            csv_content = f.read()
+    
+    if not csv_content:
+        app.logger.warning('Keine CSV-Daten verfügbar')
         return 0
     
     # Sammle alle Termine aus der CSV
     csv_termine = set()
     new_termine = []
     
-    with open(csv_path, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        
-        for row in reader:
-            try:
-                datum = datetime.strptime(row['datum'], '%Y-%m-%d').date()
-                uhrzeit = datetime.strptime(row['uhrzeit'], '%H:%M').time()
-                csv_termine.add((datum, uhrzeit))
-                
-                # Prüfen ob Termin bereits existiert
-                existing = Termin.query.filter_by(
+    reader = csv.DictReader(StringIO(csv_content))
+    
+    for row in reader:
+        try:
+            datum = datetime.strptime(row['datum'], '%Y-%m-%d').date()
+            uhrzeit = datetime.strptime(row['uhrzeit'], '%H:%M').time()
+            csv_termine.add((datum, uhrzeit))
+            
+            # Prüfen ob Termin bereits existiert
+            existing = Termin.query.filter_by(
+                datum=datum,
+                uhrzeit=uhrzeit
+            ).first()
+            
+            if not existing:
+                termin = Termin(
                     datum=datum,
-                    uhrzeit=uhrzeit
-                ).first()
+                    uhrzeit=uhrzeit,
+                    aufsicht_email=row['aufsicht_email'],
+                    raum=row.get('raum')
+                )
+                db.session.add(termin)
+                try:
+                    db.session.flush()  # Sofort prüfen, ob Duplikat
+                    new_termine.append(termin)
+                except IntegrityError:
+                    db.session.rollback()
+                    app.logger.info(f'Termin {datum} {uhrzeit} existiert bereits - überspringe')
                 
-                if not existing:
-                    termin = Termin(
-                        datum=datum,
-                        uhrzeit=uhrzeit,
-                        aufsicht_email=row['aufsicht_email'],
-                        raum=row.get('raum')
-                    )
-                    db.session.add(termin)
-                    try:
-                        db.session.flush()  # Sofort prüfen, ob Duplikat
-                        new_termine.append(termin)
-                    except IntegrityError:
-                        db.session.rollback()
-                        app.logger.info(f'Termin {datum} {uhrzeit} existiert bereits - überspringe')
-                    
-            except Exception as e:
-                app.logger.error(f'Fehler beim Laden des Termins: {str(e)}')
+        except Exception as e:
+            app.logger.error(f'Fehler beim Laden des Termins: {str(e)}')
     
     # Entferne Termine die nicht mehr in der CSV sind (nur ohne Buchungen)
     removed_count = 0

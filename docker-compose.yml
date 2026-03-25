@@ -14,7 +14,8 @@ services:
       - AZURE_ALLOWED_GROUP=${AZURE_ALLOWED_GROUP:-Lehrer}
       - MAX_SCHUELER_PRO_TERMIN=${MAX_SCHUELER_PRO_TERMIN:-30}
       - DEBUG_MODE=${DEBUG_MODE:-False}
-      - TERMINE_CSV_PATH=/app/data/termine.csv
+      - TERMINE_CSV_URL=${TERMINE_CSV_URL}  # OneDrive/SharePoint URL (Priorität)
+      - TERMINE_CSV_PATH=/app/data/termine.csv  # Fallback
       - MAIL_SERVER=${MAIL_SERVER}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USE_TLS=${MAIL_USE_TLS:-True}

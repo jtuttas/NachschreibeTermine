@@ -72,7 +72,19 @@ Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
    - Gruppen-ID finden: Azure Portal > Groups > Deine Gruppe > Object ID
    - Umgebungsvariable setzen: `AZURE_ALLOWED_GROUP=Lehrer` (Name oder ID)
 
-6. **Termine in CSV-Datei eintragen:**
+6. **Termine konfigurieren:**
+   
+   **Option A: OneDrive/SharePoint (empfohlen)**
+   1. CSV-Datei in OneDrive/SharePoint hochladen
+   2. Rechtsklick auf Datei → "Freigeben" → "Link kopieren" → "Jeder mit dem Link"
+   3. Link als `TERMINE_CSV_URL` in `.env` setzen
+   4. Für direkten Download-Link `&download=1` anhängen
+   
+   ```env
+   TERMINE_CSV_URL=https://your-tenant.sharepoint.com/:x:/s/site/abc123?download=1
+   ```
+   
+   **Option B: Lokale Datei (Fallback)**
    Datei `termine.csv` mit folgendem Format:
    ```csv
    datum,uhrzeit,aufsicht_email,raum
@@ -189,7 +201,8 @@ Im Entwicklungsmodus (`DEBUG_MODE=True`) kann der Testbenutzer verwendet werden:
 | `DATABASE_URL` | Datenbank-Pfad | sqlite:///nachschreibetermine.db |
 | `MAX_SCHUELER_PRO_TERMIN` | Max. Schüler pro Termin | 30 |
 | `DEBUG_MODE` | Debug-Login aktivieren | False |
-| `TERMINE_CSV_PATH` | Pfad zur Termin-CSV | termine.csv |
+| `TERMINE_CSV_URL` | OneDrive/SharePoint Download-Link für Termine (Priorität) | - |
+| `TERMINE_CSV_PATH` | Lokaler Fallback-Pfad zur Termin-CSV | termine.csv |
 
 **Azure AD Authentifizierung:**
 

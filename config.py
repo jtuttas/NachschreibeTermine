@@ -31,8 +31,9 @@ class Config:
     MAX_SCHUELER_PRO_TERMIN = int(os.environ.get('MAX_SCHUELER_PRO_TERMIN', 30))
     DEBUG_MODE = os.environ.get('DEBUG_MODE', 'False').lower() == 'true'
     
-    # CSV Pfad für Termine
+    # CSV Pfad/URL für Termine
     TERMINE_CSV_PATH = os.environ.get('TERMINE_CSV_PATH', 'termine.csv')
+    TERMINE_CSV_URL = os.environ.get('TERMINE_CSV_URL')  # OneDrive/SharePoint Download-Link
 
 
 class DevelopmentConfig(Config):
