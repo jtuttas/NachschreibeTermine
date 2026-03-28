@@ -126,14 +126,19 @@ def callback():
         if not user_info:
             flash('Benutzerinformationen konnten nicht abgerufen werden.', 'danger')
             return redirect(url_for('auth.login'))
-        
+
+        # Schüler haben mm-bbs.de E-Mail-Adressen, Lehrkräfte mmbbs.de
+        email = user_info.get('mail') or user_info.get('userPrincipalName', '')
+        if email.lower().endswith('@mm-bbs.de'):
+            return redirect(url_for('main.unauthorized', grund='schueler'))
+
         # Gruppenprüfung deaktiviert - benötigt Admin-Consent für GroupMember.Read.All
         # Alle authentifizierten Benutzer der Organisation haben Zugang
         is_lehrer = True  # TODO: Aktiviere Gruppenprüfung wenn Admin-Consent erteilt wurde
-        
+
         user = create_or_update_user(user_info, is_lehrer)
         login_user(user)
-        
+
         flash(f'Willkommen, {user.name}!', 'success')
         return redirect(url_for('main.dashboard'))
         
@@ -231,7 +236,8 @@ def dashboard():
 @main_bp.route('/unauthorized')
 def unauthorized():
     """Seite für nicht autorisierte Benutzer"""
-    return render_template('unauthorized.html'), 403
+    grund = request.args.get('grund')
+    return render_template('unauthorized.html', grund=grund), 403
 
 
 # --- Termine Routes ---

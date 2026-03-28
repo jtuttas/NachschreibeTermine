@@ -6,15 +6,28 @@
 <div class="row justify-content-center">
     <div class="col-md-6 text-center">
         <div class="py-5">
+            {% if grund == 'schueler' %}
+            <i class="bi bi-person-x text-warning" style="font-size: 5rem;"></i>
+            <h2 class="mt-4">Dieses System ist nur für Lehrkräfte</h2>
+            <div class="alert alert-warning mt-3 text-start" role="alert">
+                <h5><i class="bi bi-exclamation-triangle"></i> Hinweis für Schülerinnen und Schüler</h5>
+                <p class="mb-0">
+                    Das Nachschreibetermine-System ist ausschließlich für Lehrkräfte der MMBBS bestimmt.
+                    Schülerinnen und Schüler werden von Ihren Fachlehrkräften für Nachschreibetermine angemeldet.
+                    Bitte wenden Sie sich an Ihre zuständige Lehrkraft.
+                </p>
+            </div>
+            {% else %}
             <i class="bi bi-shield-x text-danger" style="font-size: 5rem;"></i>
             <h2 class="mt-4">Zugriff verweigert</h2>
             <p class="lead text-muted">
                 Sie haben keine Berechtigung, auf diese Seite zuzugreifen.
             </p>
             <p>
-                Um auf das Nachschreibetermine-System zugreifen zu können, 
+                Um auf das Nachschreibetermine-System zugreifen zu können,
                 müssen Sie Mitglied der Gruppe "Lehrer" sein.
             </p>
+            {% endif %}
             <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-3">
                 <i class="bi bi-arrow-left"></i> Zurück zur Anmeldung
             </a>
