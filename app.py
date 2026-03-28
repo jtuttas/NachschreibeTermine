@@ -39,8 +39,13 @@ def create_app(config_name=None):
         load_termine_from_csv(app)
     
     # Scheduler für E-Mail-Berichte einrichten (nur im Produktionsmodus)
+    # Nur starten wenn nicht im Debug-Modus und nur im Hauptprozess (nicht in Gunicorn-Workern)
     if not app.debug:
-        setup_scheduler(app)
+        is_gunicorn = 'gunicorn' in os.environ.get('SERVER_SOFTWARE', '')
+        is_main_process = os.environ.get('SCHEDULER_STARTED') is None
+        if not is_gunicorn or is_main_process:
+            os.environ['SCHEDULER_STARTED'] = '1'
+            setup_scheduler(app)
     
     return app
 
@@ -50,4 +55,4 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)

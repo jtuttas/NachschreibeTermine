@@ -106,15 +106,20 @@ def setup_scheduler(app):
     
     def send_daily_reports():
         """Sendet Tagesberichte für alle Termine des Tages"""
-        with app.app_context():
-            heute = date.today()
-            termine = Termin.query.filter_by(datum=heute).all()
-            
-            for termin in termine:
-                buchungen = termin.buchungen.all()
-                if buchungen:
-                    send_tagesbericht(termin, buchungen)
-                    app.logger.info(f'Tagesbericht für {termin.datum} gesendet.')
+        try:
+            with app.app_context():
+                heute = date.today()
+                app.logger.info(f'Scheduler: Suche Termine für {heute}...')
+                termine = Termin.query.filter_by(datum=heute).all()
+                app.logger.info(f'Scheduler: {len(termine)} Termine gefunden.')
+
+                for termin in termine:
+                    buchungen = termin.buchungen.all()
+                    if buchungen:
+                        send_tagesbericht(termin, buchungen)
+                        app.logger.info(f'Tagesbericht für {termin.datum} gesendet.')
+        except Exception as e:
+            app.logger.error(f'Scheduler Fehler: {str(e)}')
     
     # Jeden Tag um 23:59 ausführen
     scheduler.add_job(

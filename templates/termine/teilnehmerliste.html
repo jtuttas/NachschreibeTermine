@@ -27,8 +27,13 @@
                 <i class="bi bi-calendar-event"></i> 
                 {{ termin.datum.strftime('%A, %d. %B %Y') }} um {{ termin.uhrzeit.strftime('%H:%M') }} Uhr
             </h5>
-            <div>
-                <a href="{{ url_for('termine.teilnehmerliste_pdf', termin_id=termin.id) }}" 
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-sm"
+                        {% if not buchungen %}disabled{% endif %}
+                        data-bs-toggle="modal" data-bs-target="#emailModal">
+                    <i class="bi bi-envelope"></i> Anwesenheit per E-Mail senden
+                </button>
+                <a href="{{ url_for('termine.teilnehmerliste_pdf', termin_id=termin.id) }}"
                    class="btn btn-light btn-sm">
                     <i class="bi bi-file-pdf"></i> Als PDF exportieren
                 </a>
@@ -168,5 +173,38 @@
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
         <i class="bi bi-speedometer2"></i> Dashboard
     </a>
+</div>
+
+<!-- E-Mail Bestätigungs-Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="emailModalLabel">
+                    <i class="bi bi-envelope"></i> Anwesenheitsbericht senden
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <p>Der Anwesenheitsbericht wird an alle Lehrkräfte gesendet, die Schüler für diesen Termin angemeldet haben.</p>
+                <ul class="mb-0">
+                    <li><strong>Termin:</strong> {{ termin.datum.strftime('%d.%m.%Y') }} um {{ termin.uhrzeit.strftime('%H:%M') }} Uhr</li>
+                    <li><strong>Angemeldet:</strong> {{ buchungen|length }} Schüler</li>
+                    <li><strong>Anwesend:</strong> {{ buchungen|selectattr('ist_anwesend')|list|length }} Schüler</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Abbrechen
+                </button>
+                <form method="POST" action="{{ url_for('termine.anwesenheit_email', termin_id=termin.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> E-Mail senden
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

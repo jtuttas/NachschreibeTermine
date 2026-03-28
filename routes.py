@@ -163,6 +163,12 @@ def index():
     return redirect(url_for('auth.login'))
 
 
+@main_bp.route('/login')
+def login_alias():
+    """Kompatibilitaets-Route: /login auf Auth-Login umleiten"""
+    return redirect(url_for('auth.login'))
+
+
 @main_bp.route('/dashboard')
 @login_required
 @lehrer_required
@@ -186,22 +192,40 @@ def dashboard():
             }
         termine_gruppiert[datum_key]['termine'].append(termin)
     
+    # Vergangene Termine
+    vergangene_termine = Termin.query.filter(
+        Termin.datum < heute
+    ).order_by(Termin.datum.desc(), Termin.uhrzeit).all()
+
+    vergangene_termine_gruppiert = {}
+    for termin in vergangene_termine:
+        datum_key = termin.datum.strftime('%Y-%m-%d')
+        if datum_key not in vergangene_termine_gruppiert:
+            vergangene_termine_gruppiert[datum_key] = {
+                'datum': termin.datum,
+                'termine': []
+            }
+        vergangene_termine_gruppiert[datum_key]['termine'].append(termin)
+
     # Eigene Buchungen
     meine_buchungen = Buchung.query.filter_by(lehrer_id=current_user.id).join(Termin).filter(
         Termin.datum >= heute
     ).order_by(Termin.datum, Termin.uhrzeit).all()
-    
+
     max_plaetze = current_app.config['MAX_SCHUELER_PRO_TERMIN']
-    
-    # Anzahl verfügbarer Termine berechnen
+
+    # Anzahl verfügbarer und vergangener Termine berechnen
     total_termine = len(termine)
-    
-    return render_template('dashboard.html', 
+    total_vergangene = sum(len(d['termine']) for d in vergangene_termine_gruppiert.values())
+
+    return render_template('dashboard.html',
                          termine_gruppiert=termine_gruppiert,
+                         vergangene_termine_gruppiert=vergangene_termine_gruppiert,
                          meine_buchungen=meine_buchungen,
                          max_plaetze=max_plaetze,
                          heute=heute,
-                         total_termine=total_termine)
+                         total_termine=total_termine,
+                         total_vergangene=total_vergangene)
 
 
 @main_bp.route('/unauthorized')
@@ -365,6 +389,29 @@ def anwesenheit_toggle(buchung_id):
     flash(f'{buchung.schueler_name} als {status} markiert.', 'success')
     
     return redirect(url_for('termine.teilnehmerliste', termin_id=buchung.termin_id))
+
+
+@termine_bp.route('/<int:termin_id>/anwesenheit-email', methods=['POST'])
+@login_required
+@lehrer_required
+def anwesenheit_email(termin_id):
+    """Sendet Anwesenheits-E-Mails an alle betroffenen Lehrkräfte"""
+    termin = Termin.query.get_or_404(termin_id)
+    buchungen = termin.buchungen.all()
+
+    if not buchungen:
+        flash('Keine Buchungen vorhanden, keine E-Mails gesendet.', 'warning')
+        return redirect(url_for('termine.teilnehmerliste', termin_id=termin.id))
+
+    from email_service import send_tagesbericht
+    send_tagesbericht(termin, buchungen)
+
+    # Zähle betroffene Lehrkräfte
+    lehrer_ids = set(b.lehrer_id for b in buchungen)
+    anzahl = len(lehrer_ids)
+
+    flash(f'Anwesenheitsbericht wurde an {anzahl} Lehrkraft/Lehrkräfte per E-Mail gesendet.', 'success')
+    return redirect(url_for('termine.teilnehmerliste', termin_id=termin.id))
 
 
 @termine_bp.route('/<int:termin_id>/pdf')
