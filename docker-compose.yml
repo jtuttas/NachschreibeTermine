@@ -22,6 +22,7 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - TZ=Europe/Berlin
     volumes:
       - ./data:/app/data
       - ./termine.csv:/app/data/termine.csv:ro

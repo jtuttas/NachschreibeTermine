@@ -1,4 +1,5 @@
 from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
 from flask import current_app
 from flask_mail import Mail, Message
 
@@ -101,30 +102,31 @@ def setup_scheduler(app):
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
     from models import Termin
-    
-    scheduler = BackgroundScheduler()
-    
+
+    berlin_tz = ZoneInfo('Europe/Berlin')
+    scheduler = BackgroundScheduler(timezone=berlin_tz)
+
     def send_daily_reports():
         """Sendet Tagesberichte für alle Termine des Tages"""
-        try:
-            with app.app_context():
-                heute = date.today()
-                app.logger.info(f'Scheduler: Suche Termine für {heute}...')
-                termine = Termin.query.filter_by(datum=heute).all()
-                app.logger.info(f'Scheduler: {len(termine)} Termine gefunden.')
+        with app.app_context():
+            heute = datetime.now(berlin_tz).date()
+            app.logger.info(f'Scheduler: Suche Termine für {heute}...')
+            termine = Termin.query.filter_by(datum=heute).all()
+            app.logger.info(f'Scheduler: {len(termine)} Termine gefunden.')
 
-                for termin in termine:
+            for termin in termine:
+                try:
                     buchungen = termin.buchungen.all()
                     if buchungen:
                         send_tagesbericht(termin, buchungen)
                         app.logger.info(f'Tagesbericht für {termin.datum} gesendet.')
-        except Exception as e:
-            app.logger.error(f'Scheduler Fehler: {str(e)}')
-    
-    # Jeden Tag um 23:59 ausführen
+                except Exception as e:
+                    app.logger.error(f'Scheduler Fehler für Termin {termin.datum}: {str(e)}')
+
+    # Jeden Tag um 23:59 Uhr (Europe/Berlin) ausführen
     scheduler.add_job(
         send_daily_reports,
-        CronTrigger(hour=23, minute=59),
+        CronTrigger(hour=23, minute=59, timezone=berlin_tz),
         id='daily_report',
         replace_existing=True
     )
