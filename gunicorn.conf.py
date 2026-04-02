@@ -27,6 +27,18 @@ accesslog = "-"
 errorlog = "-"
 loglevel = "info"
 
+
+def post_fork(server, worker):
+    """Dispose SQLAlchemy connection pool after fork so each worker gets fresh connections."""
+    try:
+        from app import app
+        from models import db
+        with app.app_context():
+            db.engine.dispose()
+    except Exception as e:
+        server.log.warning(f'post_fork: could not dispose DB connections: {e}')
+
+
 # Timeouts
 timeout = 120
 graceful_timeout = 30
