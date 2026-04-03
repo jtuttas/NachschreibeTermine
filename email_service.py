@@ -1,9 +1,14 @@
+import logging
+import os
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from flask import current_app
 from flask_mail import Mail, Message
 
 mail = Mail()
+
+# Module-level reference to prevent garbage collection of the scheduler
+_scheduler = None
 
 
 def send_email(to, subject, body_html, body_text=None):
@@ -18,6 +23,7 @@ def send_email(to, subject, body_html, body_text=None):
         mail.send(msg)
         return True
     except Exception as e:
+        print(f'[E-Mail] Fehler beim Senden an {to}: {str(e)}', flush=True)
         current_app.logger.error(f'E-Mail Fehler: {str(e)}')
         return False
 
@@ -99,8 +105,10 @@ def send_tagesbericht(termin, buchungen):
 
 def setup_scheduler(app):
     """Richtet den Scheduler für automatische Berichte ein"""
+    global _scheduler
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
     from models import Termin
 
     berlin_tz = ZoneInfo('Europe/Berlin')
@@ -108,30 +116,61 @@ def setup_scheduler(app):
 
     def send_daily_reports():
         """Sendet Tagesberichte für alle Termine des Tages"""
-        with app.app_context():
-            heute = datetime.now(berlin_tz).date()
-            app.logger.info(f'Scheduler: Suche Termine für {heute}...')
-            termine = Termin.query.filter_by(datum=heute).all()
-            app.logger.info(f'Scheduler: {len(termine)} Termine gefunden.')
+        try:
+            with app.app_context():
+                heute = datetime.now(berlin_tz).date()
+                print(f'[Scheduler] Tagesbericht-Job gestartet für {heute}', flush=True)
+                app.logger.info(f'Scheduler: Suche Termine für {heute}...')
+                termine = Termin.query.filter_by(datum=heute).all()
+                print(f'[Scheduler] {len(termine)} Termine gefunden für {heute}', flush=True)
+                app.logger.info(f'Scheduler: {len(termine)} Termine gefunden.')
 
-            for termin in termine:
-                try:
-                    buchungen = termin.buchungen.all()
-                    if buchungen:
-                        send_tagesbericht(termin, buchungen)
-                        app.logger.info(f'Tagesbericht für {termin.datum} gesendet.')
-                except Exception as e:
-                    app.logger.error(f'Scheduler Fehler für Termin {termin.datum}: {str(e)}')
+                for termin in termine:
+                    try:
+                        buchungen = termin.buchungen.all()
+                        if buchungen:
+                            send_tagesbericht(termin, buchungen)
+                            print(f'[Scheduler] Tagesbericht für {termin.datum} gesendet.', flush=True)
+                            app.logger.info(f'Tagesbericht für {termin.datum} gesendet.')
+                    except Exception as e:
+                        print(f'[Scheduler] Fehler für Termin {termin.datum}: {e}', flush=True)
+                        app.logger.error(f'Scheduler Fehler für Termin {termin.datum}: {str(e)}')
+        except Exception as e:
+            print(f'[Scheduler] Kritischer Fehler in send_daily_reports: {e}', flush=True)
+            import traceback
+            traceback.print_exc()
+
+    def job_listener(event):
+        """Protokolliert APScheduler Job-Ausführungen und Fehler"""
+        if event.exception:
+            print(f'[Scheduler] Job "{event.job_id}" fehlgeschlagen: {event.exception}', flush=True)
+        else:
+            print(f'[Scheduler] Job "{event.job_id}" erfolgreich ausgeführt.', flush=True)
+
+    scheduler.add_listener(job_listener, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
+
+    # APScheduler-eigene Fehlermeldungen auf stdout weiterleiten
+    logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
     # Jeden Tag um 23:59 Uhr (Europe/Berlin) ausführen
     scheduler.add_job(
         send_daily_reports,
         CronTrigger(hour=23, minute=59, timezone=berlin_tz),
         id='daily_report',
-        replace_existing=True
+        replace_existing=True,
+        # Grace period of 1 hour: allows the job to fire even if the scheduler
+        # was briefly unavailable at 23:59 (e.g., container restart or high load).
+        # Since the job only queries today's date, firing up to 00:59 still reports
+        # the correct day's termine.
+        misfire_grace_time=3600,
     )
-    
+
     scheduler.start()
+
+    # Store at module level to prevent garbage collection
+    _scheduler = scheduler
+
+    print(f'[Scheduler] Tagesberichts-Scheduler gestartet (PID: {os.getpid()})', flush=True)
     app.logger.info('Scheduler für Tagesberichte gestartet.')
-    
+
     return scheduler
