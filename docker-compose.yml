@@ -22,6 +22,8 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - MAIL_REPORT_HOUR=${MAIL_REPORT_HOUR:-20}
+      - MAIL_REPORT_MINUTE=${MAIL_REPORT_MINUTE:-0}
       - TZ=Europe/Berlin
     volumes:
       - ./data:/app/data

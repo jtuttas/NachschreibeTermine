@@ -11,7 +11,7 @@ Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
 - **Schülerbuchung** - Einfaches Eintragen von Schülern für Nachschreibetermine
 - **Teilnehmerlisten** - Übersicht und PDF-Export
 - **Anwesenheitskontrolle** - Bestätigung der Anwesenheit während des Termins
-- **E-Mail-Berichte** - Automatische Tagesberichte um 23:59
+- **E-Mail-Berichte** - Automatische Tagesberichte um 20:00
 
 ## Installation
 
@@ -222,6 +222,8 @@ Für automatische Tagesberichte:
 - `MAIL_PORT` - SMTP Port (Standard: 587)
 - `MAIL_USERNAME` - E-Mail Benutzername
 - `MAIL_PASSWORD` - E-Mail Passwort
+- `MAIL_REPORT_HOUR` - Versandstunde für Tagesberichte (Standard: 20)
+- `MAIL_REPORT_MINUTE` - Versandminute für Tagesberichte (Standard: 0)
 
 ## Projektstruktur
 

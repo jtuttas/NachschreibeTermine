@@ -111,8 +111,14 @@ def setup_scheduler(app):
     from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
     from models import Termin
 
+    if _scheduler and _scheduler.running:
+        app.logger.info('Scheduler für Tagesberichte läuft bereits.')
+        return _scheduler
+
     berlin_tz = ZoneInfo('Europe/Berlin')
     scheduler = BackgroundScheduler(timezone=berlin_tz)
+    report_hour = app.config.get('MAIL_REPORT_HOUR', 20)
+    report_minute = app.config.get('MAIL_REPORT_MINUTE', 0)
 
     def send_daily_reports():
         """Sendet Tagesberichte für alle Termine des Tages"""
@@ -152,16 +158,14 @@ def setup_scheduler(app):
     # APScheduler-eigene Fehlermeldungen auf stdout weiterleiten
     logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
-    # Jeden Tag um 23:59 Uhr (Europe/Berlin) ausführen
+    # Jeden Tag zur konfigurierten Uhrzeit (Europe/Berlin) ausführen
     scheduler.add_job(
         send_daily_reports,
-        CronTrigger(hour=23, minute=59, timezone=berlin_tz),
+        CronTrigger(hour=report_hour, minute=report_minute, timezone=berlin_tz),
         id='daily_report',
         replace_existing=True,
         # Grace period of 1 hour: allows the job to fire even if the scheduler
-        # was briefly unavailable at 23:59 (e.g., container restart or high load).
-        # Since the job only queries today's date, firing up to 00:59 still reports
-        # the correct day's termine.
+        # was briefly unavailable around the target time (e.g., container restart).
         misfire_grace_time=3600,
     )
 
@@ -169,8 +173,24 @@ def setup_scheduler(app):
 
     # Store at module level to prevent garbage collection
     _scheduler = scheduler
+    next_run = scheduler.get_job('daily_report').next_run_time
 
-    print(f'[Scheduler] Tagesberichts-Scheduler gestartet (PID: {os.getpid()})', flush=True)
-    app.logger.info('Scheduler für Tagesberichte gestartet.')
+    print(
+        f'[Scheduler] Tagesberichts-Scheduler gestartet (PID: {os.getpid()}, naechster Lauf: {next_run})',
+        flush=True,
+    )
+    app.logger.info(
+        'Scheduler für Tagesberichte gestartet (Versandzeit %02d:%02d Europe/Berlin).',
+        report_hour,
+        report_minute,
+    )
 
     return scheduler
+
+
+def shutdown_scheduler():
+    """Beendet den Scheduler sauber beim Herunterfahren des Prozesses."""
+    global _scheduler
+    if _scheduler and _scheduler.running:
+        _scheduler.shutdown(wait=False)
+    _scheduler = None

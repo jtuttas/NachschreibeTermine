@@ -1,4 +1,5 @@
 import os
+import sys
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -38,15 +39,10 @@ def create_app(config_name=None):
         cleanup_duplicate_termine(app)
         load_termine_from_csv(app)
     
-    # Scheduler für E-Mail-Berichte einrichten (nur im Produktionsmodus)
-    # Nur starten wenn nicht im Debug-Modus und nur im Hauptprozess (nicht in Gunicorn-Workern)
-    if not app.debug:
-        import sys
-        is_gunicorn = 'gunicorn' in sys.modules
-        is_main_process = os.environ.get('SCHEDULER_STARTED') is None
-        if not is_gunicorn or is_main_process:
-            os.environ['SCHEDULER_STARTED'] = '1'
-            setup_scheduler(app)
+    # Scheduler für E-Mail-Berichte nur außerhalb von Gunicorn direkt starten.
+    # Unter Gunicorn erfolgt der Start explizit im Masterprozess über when_ready.
+    if not app.debug and 'gunicorn' not in sys.modules:
+        setup_scheduler(app)
     
     return app
 

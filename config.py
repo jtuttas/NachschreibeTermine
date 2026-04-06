@@ -26,6 +26,8 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+    MAIL_REPORT_HOUR = int(os.environ.get('MAIL_REPORT_HOUR', 20))
+    MAIL_REPORT_MINUTE = int(os.environ.get('MAIL_REPORT_MINUTE', 0))
     
     # Anwendungsparameter
     MAX_SCHUELER_PRO_TERMIN = int(os.environ.get('MAX_SCHUELER_PRO_TERMIN', 30))

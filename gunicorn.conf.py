@@ -39,6 +39,28 @@ def post_fork(server, worker):
         server.log.warning(f'post_fork: could not dispose DB connections: {e}')
 
 
+def when_ready(server):
+    """Startet den APScheduler genau einmal im Gunicorn-Masterprozess."""
+    try:
+        from app import app
+        from email_service import setup_scheduler
+
+        setup_scheduler(app)
+        server.log.info('Tagesberichts-Scheduler im Gunicorn-Masterprozess gestartet.')
+    except Exception as e:
+        server.log.error(f'when_ready: could not start scheduler: {e}')
+
+
+def on_exit(server):
+    """Beendet Hintergrunddienste sauber beim Stoppen von Gunicorn."""
+    try:
+        from email_service import shutdown_scheduler
+
+        shutdown_scheduler()
+    except Exception as e:
+        server.log.warning(f'on_exit: could not stop scheduler: {e}')
+
+
 # Timeouts
 timeout = 120
 graceful_timeout = 30
