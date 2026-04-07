@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from flask import current_app
@@ -9,6 +10,54 @@ mail = Mail()
 
 # Module-level reference to prevent garbage collection of the scheduler
 _scheduler = None
+_scheduler_lock_fd = None
+_scheduler_lock_path = None
+
+
+def _try_acquire_scheduler_lock(app):
+    """Versucht einen Prozess-Lock zu setzen, damit nur eine Instanz den Scheduler startet."""
+    global _scheduler_lock_fd, _scheduler_lock_path
+
+    if _scheduler_lock_fd is not None:
+        return True
+
+    lock_path = app.config.get('SCHEDULER_LOCK_PATH') or os.path.join(
+        tempfile.gettempdir(),
+        'nachschreibetermine_scheduler.lock',
+    )
+
+    try:
+        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode('ascii'))
+        _scheduler_lock_fd = fd
+        _scheduler_lock_path = lock_path
+        return True
+    except FileExistsError:
+        app.logger.info('Scheduler-Lock existiert bereits (%s). Starte keinen zweiten Scheduler.', lock_path)
+        return False
+    except Exception as e:
+        app.logger.error('Scheduler-Lock konnte nicht gesetzt werden: %s', str(e))
+        return False
+
+
+def _release_scheduler_lock():
+    """Gibt den Scheduler-Lock wieder frei."""
+    global _scheduler_lock_fd, _scheduler_lock_path
+
+    if _scheduler_lock_fd is not None:
+        try:
+            os.close(_scheduler_lock_fd)
+        except Exception:
+            pass
+
+    if _scheduler_lock_path and os.path.exists(_scheduler_lock_path):
+        try:
+            os.unlink(_scheduler_lock_path)
+        except Exception:
+            pass
+
+    _scheduler_lock_fd = None
+    _scheduler_lock_path = None
 
 
 def send_email(to, subject, body_html, body_text=None):
@@ -115,6 +164,9 @@ def setup_scheduler(app):
         app.logger.info('Scheduler für Tagesberichte läuft bereits.')
         return _scheduler
 
+    if not _try_acquire_scheduler_lock(app):
+        return None
+
     berlin_tz = ZoneInfo('Europe/Berlin')
     scheduler = BackgroundScheduler(timezone=berlin_tz)
     report_hour = app.config.get('MAIL_REPORT_HOUR', 20)
@@ -174,9 +226,13 @@ def setup_scheduler(app):
     # Store at module level to prevent garbage collection
     _scheduler = scheduler
     next_run = scheduler.get_job('daily_report').next_run_time
+    next_run_utc = next_run.astimezone(ZoneInfo('UTC')) if next_run else None
 
     print(
-        f'[Scheduler] Tagesberichts-Scheduler gestartet (PID: {os.getpid()}, naechster Lauf: {next_run})',
+        (
+            '[Scheduler] Tagesberichts-Scheduler gestartet '
+            f'(PID: {os.getpid()}, naechster Lauf lokal: {next_run}, UTC: {next_run_utc})'
+        ),
         flush=True,
     )
     app.logger.info(
@@ -194,3 +250,4 @@ def shutdown_scheduler():
     if _scheduler and _scheduler.running:
         _scheduler.shutdown(wait=False)
     _scheduler = None
+    _release_scheduler_lock()

@@ -549,12 +549,35 @@ def load_termine_from_csv(app):
         app.logger.warning('Keine CSV-Daten verfügbar')
         return 0
     
+    # UTF-8 BOM entfernen, falls vorhanden
+    csv_content = csv_content.lstrip('\ufeff')
+
+    # CSV-Delimiter robust erkennen (z. B. ';' bei Excel-Export)
+    delimiter = ','
+    try:
+        sniff_sample = '\n'.join(csv_content.splitlines()[:10])
+        dialect = csv.Sniffer().sniff(sniff_sample, delimiters=',;\t')
+        delimiter = dialect.delimiter
+    except Exception:
+        delimiter = ','
+
     # Sammle alle Termine aus der CSV
     csv_termine = set()
     new_termine = []
     processed_in_session = set()  # Verhindert Duplikate innerhalb einer Import-Session
-    
-    reader = csv.DictReader(StringIO(csv_content))
+
+    reader = csv.DictReader(StringIO(csv_content), delimiter=delimiter)
+
+    required_columns = {'datum', 'uhrzeit', 'aufsicht_email'}
+    found_columns = set(reader.fieldnames or [])
+    missing_columns = required_columns - found_columns
+    if missing_columns:
+        app.logger.error(
+            'CSV enthält nicht die erforderlichen Spalten. Gefunden: %s | Fehlend: %s',
+            sorted(found_columns),
+            sorted(missing_columns),
+        )
+        return 0
     
     for row in reader:
         try:

@@ -28,6 +28,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
     MAIL_REPORT_HOUR = int(os.environ.get('MAIL_REPORT_HOUR', 20))
     MAIL_REPORT_MINUTE = int(os.environ.get('MAIL_REPORT_MINUTE', 0))
+    SCHEDULER_LOCK_PATH = os.environ.get('SCHEDULER_LOCK_PATH')
     
     # Anwendungsparameter
     MAX_SCHUELER_PRO_TERMIN = int(os.environ.get('MAX_SCHUELER_PRO_TERMIN', 30))
