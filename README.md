@@ -8,6 +8,7 @@ Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
 
 - **Microsoft Azure AD Authentifizierung** - Sichere Anmeldung für Lehrkräfte
 - **Terminverwaltung** - Automatisches Einlesen von Terminen aus CSV
+- **CSV-Synchronisierung** - Veraltete Termine werden inklusive Buchungen aus der Datenbank entfernt
 - **Schülerbuchung** - Einfaches Eintragen von Schülern für Nachschreibetermine
 - **Teilnehmerlisten** - Übersicht und PDF-Export
 - **Anwesenheitskontrolle** - Bestätigung der Anwesenheit während des Termins

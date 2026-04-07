@@ -516,8 +516,8 @@ def load_termine_from_csv(app):
     - Wenn TERMINE_CSV_URL gesetzt ist, wird die CSV von dort heruntergeladen
     - Ansonsten wird die lokale Datei TERMINE_CSV_PATH verwendet
     - Neue Termine aus der CSV werden hinzugefügt
-    - Termine ohne Buchungen, die nicht mehr in der CSV sind, werden entfernt
-    - Termine mit Buchungen bleiben erhalten (auch wenn nicht in CSV)
+    - Termine, die nicht mehr in der CSV sind, werden entfernt
+    - Zugehörige Buchungen werden dabei ebenfalls gelöscht
     """
     csv_url = app.config.get('TERMINE_CSV_URL')
     csv_path = app.config['TERMINE_CSV_PATH']
@@ -616,28 +616,38 @@ def load_termine_from_csv(app):
         except Exception as e:
             app.logger.error(f'Fehler beim Laden des Termins: {str(e)}')
     
-    # Entferne Termine die nicht mehr in der CSV sind (nur ohne Buchungen)
+    # Entferne Termine die nicht mehr in der CSV sind (inkl. zugehöriger Buchungen)
     removed_count = 0
+    removed_buchungen_count = 0
     if csv_termine:  # Nur synchronisieren wenn CSV Termine enthält
         all_termine = Termin.query.all()
         for termin in all_termine:
             termin_key = (termin.datum, termin.uhrzeit)
             if termin_key not in csv_termine:
-                if termin.buchungen.count() == 0:
-                    db.session.delete(termin)
-                    removed_count += 1
-                else:
-                    app.logger.info(f'Termin {termin.datum} {termin.uhrzeit} nicht in CSV, aber hat Buchungen - wird beibehalten')
-    else:
-        # CSV ist leer - entferne alle Termine ohne Buchungen
-        all_termine = Termin.query.all()
-        for termin in all_termine:
-            if termin.buchungen.count() == 0:
+                buchungen = termin.buchungen.all()
+                for buchung in buchungen:
+                    db.session.delete(buchung)
+                    removed_buchungen_count += 1
                 db.session.delete(termin)
                 removed_count += 1
+    else:
+        # CSV ist leer - entferne alle Termine inkl. zugehöriger Buchungen
+        all_termine = Termin.query.all()
+        for termin in all_termine:
+            buchungen = termin.buchungen.all()
+            for buchung in buchungen:
+                db.session.delete(buchung)
+                removed_buchungen_count += 1
+            db.session.delete(termin)
+            removed_count += 1
     
     db.session.commit()
-    app.logger.info(f'{len(new_termine)} Termine aus CSV geladen, {removed_count} veraltete Termine entfernt.')
+    app.logger.info(
+        '%d Termine aus CSV geladen, %d veraltete Termine und %d zugehörige Buchungen entfernt.',
+        len(new_termine),
+        removed_count,
+        removed_buchungen_count,
+    )
     return len(new_termine)
 
 
