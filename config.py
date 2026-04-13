@@ -16,8 +16,10 @@ class Config:
     AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
     AZURE_AUTHORITY = os.environ.get('AZURE_AUTHORITY', f"https://login.microsoftonline.com/{os.environ.get('AZURE_TENANT_ID', 'common')}")
     AZURE_REDIRECT_PATH = "/auth/callback"
+    AZURE_EXTERNAL_BASE_URL = os.environ.get('AZURE_EXTERNAL_BASE_URL')
     AZURE_SCOPE = ["User.Read"]  # GroupMember.Read.All entfernt - benötigt Admin-Consent
     AZURE_ALLOWED_GROUP = os.environ.get('AZURE_ALLOWED_GROUP', 'Lehrer')  # Gruppenname oder Gruppen-ID
+    PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME', 'https')
     
     # E-Mail Konfiguration
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.example.com')

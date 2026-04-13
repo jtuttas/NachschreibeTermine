@@ -21,7 +21,7 @@ def create_app(config_name=None):
     app.config.from_object(config[config_name])
     
     # ProxyFix für korrekte URL-Generierung hinter Reverse Proxy (HTTPS)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
     
     # Extensions initialisieren
     init_db(app)

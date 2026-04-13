@@ -57,9 +57,13 @@ Ein Flask-basiertes Buchungssystem für Nachschreibetermine an Schulen.
    - Neue Registrierung erstellen
    - Redirect URI hinzufügen (Platform: **Web**):
      - Entwicklung: `http://localhost:5000/auth/callback`
-     - Produktion: `https://deine-domain.de:5001/auth/callback`
+       - Produktion: `https://deine-domain.de/auth/callback`
    - Client Secret erstellen
    - Werte in `.env` eintragen
+
+    **Wichtig bei einfacher Portweiterleitung:**
+    - Wenn extern `443` auf den Container weitergeleitet wird, muss als öffentliche URL **ohne** internen Port gearbeitet werden
+    - Setze dafür in `.env`: `AZURE_EXTERNAL_BASE_URL=https://deine-domain.de`
 
    **API-Berechtigungen konfigurieren:**
    - API permissions > Add a permission > Microsoft Graph > Delegated permissions
@@ -132,6 +136,7 @@ docker run -d -p 5000:5000 \
 docker run -d -p 5001:5000 \
   -e SECRET_KEY=your-secret-key \
   -e DATABASE_URL=sqlite:////app/data/nachschreibetermine.db \
+   -e AZURE_EXTERNAL_BASE_URL=https://deine-domain.de \
   -e AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
   -e AZURE_CLIENT_SECRET=your-client-secret \
   -e AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
@@ -139,6 +144,8 @@ docker run -d -p 5001:5000 \
   -v ./data:/app/data \
   -v ./termine.csv:/app/data/termine.csv:ro \
   ghcr.io/jtuttas/nachschreibetermine:latest
+
+Bei externer Veröffentlichung über Portweiterleitung auf `443` bleibt die öffentliche Adresse trotzdem `https://deine-domain.de`.
 ```
 
 ### Manuell mit Docker

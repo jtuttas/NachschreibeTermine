@@ -1,5 +1,5 @@
 import msal
-from flask import redirect, url_for, session, request, current_app
+from flask import redirect, url_for, session, current_app
 from flask_login import LoginManager, login_user, logout_user, current_user
 from functools import wraps
 from models import User, db
@@ -26,10 +26,21 @@ def build_msal_app(cache=None):
     )
 
 
+def get_redirect_uri():
+    """Ermittelt die externe Callback-URL für Azure AD."""
+    external_base_url = current_app.config.get('AZURE_EXTERNAL_BASE_URL')
+    callback_path = url_for('auth.callback')
+
+    if external_base_url:
+        return f"{external_base_url.rstrip('/')}{callback_path}"
+
+    return url_for('auth.callback', _external=True)
+
+
 def get_auth_url():
     """Generiert die Azure AD Authentifizierungs-URL"""
     msal_app = build_msal_app()
-    redirect_uri = request.url_root.rstrip('/') + current_app.config['AZURE_REDIRECT_PATH']
+    redirect_uri = get_redirect_uri()
     
     auth_url = msal_app.get_authorization_request_url(
         current_app.config['AZURE_SCOPE'],
@@ -42,7 +53,7 @@ def get_auth_url():
 def get_token_from_code(code):
     """Tauscht den Autorisierungscode gegen ein Token"""
     msal_app = build_msal_app()
-    redirect_uri = request.url_root.rstrip('/') + current_app.config['AZURE_REDIRECT_PATH']
+    redirect_uri = get_redirect_uri()
     
     result = msal_app.acquire_token_by_authorization_code(
         code,
